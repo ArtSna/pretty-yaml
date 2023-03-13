@@ -1,10 +1,10 @@
 [![](https://jitpack.io/v/TakuiasH/pretty-yaml.svg)](https://jitpack.io/#TakuiasH/pretty-yaml)
 
-# pretty-database
-A prettier solution of dealing with databases
+# pretty-yaml
+A prettier solution of dealing with spigot yaml files
 
 ## Usage
-Here is an CRUD example
+Here is an example
 ```java
 public class UserEntity extends YamlEntity {
 
