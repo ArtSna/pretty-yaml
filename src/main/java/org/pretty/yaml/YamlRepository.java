@@ -54,6 +54,10 @@ public class YamlRepository {
 		file.saveFile();
 	}
 	
+	public void delete(Object entityId) {
+		delete(entityId.toString());
+	}
+	
 	public void delete(String entityId) {
 		if(!exists(entityId)) 
 			throw new EntityNotFoundException("entity '" + entityId + "' not found");
@@ -62,8 +66,12 @@ public class YamlRepository {
 		file.saveFile();
 	}
 	
-	public boolean exists(String entityId) {
+	public boolean exists(Object entityId) {
 		return contains(entityId.toString());
+	}
+	
+	public boolean exists(String entityId) {
+		return contains(entityId);
 	}
 	
 	public <T extends YamlEntity> List<T> findAll(Class<T> entityClass) {
@@ -82,6 +90,10 @@ public class YamlRepository {
 	
 	public <T extends YamlEntity> T findByField(Class<T> entityClass, String fieldName, Object fieldValue) {
 		return findAll(entityClass).stream().filter(e -> filter(e, fieldName, fieldValue)).findFirst().orElse(null);
+	}
+	
+	public <T extends YamlEntity> T find(Class<T> entityClass, Object entityId) {
+		return find(entityClass, entityId.toString());
 	}
 	
 	public <T extends YamlEntity> T find(Class<T> entityClass, String entityId) {
