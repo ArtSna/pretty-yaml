@@ -1,4 +1,4 @@
-[![](https://jitpack.io/v/TakuiasH/pretty-database.svg)](https://jitpack.io/#TakuiasH/pretty-database)
+[![](https://jitpack.io/v/TakuiasH/pretty-yaml.svg)](https://jitpack.io/#TakuiasH/pretty-yaml)
 
 # pretty-database
 A prettier solution of dealing with databases
