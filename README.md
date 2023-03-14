@@ -7,7 +7,7 @@ A prettier solution of dealing with spigot yaml files
 Here is an example
 
 ```java
-public class Role extends Enum {
+public final class Role extends Enum {
 
 	public static Role OWNER = new Role("OWNER");
 	public static Role ADMIN = new Role("ADMIN");
