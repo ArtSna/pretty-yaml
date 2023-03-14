@@ -5,11 +5,40 @@ A prettier solution of dealing with spigot yaml files
 
 ## Usage
 Here is an example
+
+```java
+public class Role extends Enum {
+
+	public static Role OWNER = new Role("OWNER");
+	public static Role ADMIN = new Role("ADMIN");
+	public static Role MEMBER = new Role("MEMBER");
+
+	private Role(String name) { super( name ); }
+
+ 	public static Role getEnum(String role) {
+ 		return (Role) getEnum(Role.class, role);
+ 	}
+ 
+	public static Map getEnumMap( ) {
+		return getEnumMap(Role.class);
+	}
+ 
+	public static List getEnumList( ) {
+		return getEnumList(Role.class);
+	}
+ 
+	public static Iterator iterator( ) {
+		return iterator(Role.class);
+	}
+}
+```
+
 ```java
 public class UserEntity extends YamlEntity {
 
 	public String name;
 	public String data;
+	public Role role;
 	
 }
 ```
@@ -26,12 +55,13 @@ public class Main extends JavaPlugin {
 		//Creating new user
 		UserEntity user = new UserEntity();
 		user.generateId(); //Generate a new UUID
-
+		
 		if(!usersRepo.exists(user.getId())) {
 			
 			user.name = "TakuiasH";
 			user.data = "test";
-			
+			user.role = Role.OWNER;
+
 			usersRepo.save(user);
 		}
 		
@@ -41,6 +71,8 @@ public class Main extends JavaPlugin {
 		
 		if(user2 != null) {
 			user2.data = "Hello World!";
+			user.role = Role.MEMBER;
+
 			usersRepo.save(user2);
 		}
 		
