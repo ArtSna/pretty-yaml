@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.enums.Enum;
+import org.apache.commons.lang.enums.EnumUtils;
 import org.bukkit.plugin.Plugin;
 
 public class YamlRepository {
@@ -45,7 +47,12 @@ public class YamlRepository {
 					if(contains(entity.getId() + "." + field.getName()))
 						continue;
 				
-				set(entity.getId() + "." + field.getName(), field.get(entity));
+				if(field.get(entity) instanceof Enum) 
+					set(entity.getId() + "." + field.getName(), ((Enum) field.get(entity)).getName());
+				else
+					set(entity.getId() + "." + field.getName(), field.get(entity));
+
+				
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				e.printStackTrace();
 			}
@@ -112,8 +119,14 @@ public class YamlRepository {
 		
 		for(Field field : entity.getClass().getFields()) {	
 			try {
-				field.set(entity, file.get(name + "." + entityId + "." + field.getName()));
-			} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
+
+				try {
+					field.set(entity, EnumUtils.getEnum(field.getType(), file.getString(name + "." + entityId + "." + field.getName())));
+				} catch (IllegalArgumentException e) {
+					field.set(entity, file.get(name + "." + entityId + "." + field.getName()));
+				}
+				
+			} catch (IllegalArgumentException | IllegalAccessException | SecurityException  e) {
 				e.printStackTrace();
 			}
 		}

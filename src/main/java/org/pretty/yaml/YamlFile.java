@@ -31,6 +31,7 @@ public class YamlFile extends YamlConfiguration {
 	public YamlFile(File file) {
 		this(file, true);
 	}
+
 	
 	public YamlFile(File file, boolean createIfNotExists) {
 		this.file = file;
