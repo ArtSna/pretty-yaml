@@ -111,9 +111,6 @@ public class YamlFile extends YamlConfiguration {
     }
 	
 	public void saveResource(Plugin plugin, String resourcePath, boolean replace) {
-		if(file.exists())
-			return;
-		
         resourcePath = resourcePath.replace('\\', '/');
         InputStream in = plugin.getResource(resourcePath);
         if (in == null) {
@@ -129,7 +126,7 @@ public class YamlFile extends YamlConfiguration {
         }
         
         try {
-            if (!outFile.exists() || replace) {
+            if (!outFile.exists() || outFile.length() == 0 || replace) {
                 OutputStream out = new FileOutputStream(outFile);
                 byte[] buf = new byte[1024];
                 int len;
@@ -144,8 +141,6 @@ public class YamlFile extends YamlConfiguration {
 				} catch (InvalidConfigurationException e) {
 					e.printStackTrace();
 				}
-            } else {
-                plugin.getLogger().log(Level.WARNING, "Could not save " + outFile.getName() + " to " + outFile + " because " + outFile.getName() + " already exists.");
             }
         } catch (IOException ex) {
         	plugin.getLogger().log(Level.SEVERE, "Could not save " + outFile.getName() + " to " + outFile, ex);
