@@ -6,52 +6,45 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.enums.Enum;
-import org.apache.commons.lang.enums.EnumUtils;
 import org.bukkit.plugin.Plugin;
 
-public class YamlRepository {
+public class YamlRepository<T extends YamlEntity> {
 
 	private final String name;
 	private final YamlFile file;
+	private final Class<T> entityClass;
 	
-	public YamlRepository(Plugin plugin, String name) {
-		this.file = new YamlFile(plugin.getDataFolder(), "/yaml/repositories/" + name + ".yaml");
+	public YamlRepository(Plugin plugin, String name, Class<T> entityClass) {
+		this.file = new YamlFile(plugin.getDataFolder(), "/repositories/yaml/" + name + ".yaml");
 		this.name = name;
+		this.entityClass = entityClass;
 	}
 	
 	public String getName() {
 		return name;
 	}
 	
-	public void save(Object yamlEntity) {
-		this.save(yamlEntity, true);
+	public void save(YamlEntity entity) {
+		this.save(entity, true);
 	}
 
-	public void save(Object yamlEntity, boolean replaceData) {
-		if(!(yamlEntity instanceof YamlEntity)) 
-			throw new EntityException("entity object need extends YamlEntity");
-		
-		YamlEntity entity = (YamlEntity) yamlEntity;
+	public void save(YamlEntity entity, boolean replaceData) {
 		
 		if(exists(entity.getId())) {
 			entity.update();
-			set(entity.getId() + ".updatedAt", entity.getUpdatedAt());
+			file.set(entity.getId() + ".updatedAt", entity.getUpdatedAt());
 		} else {
-			set(entity.getId() + ".createdAt", entity.getCreatedAt());
+			file.set(entity.getId() + ".createdAt", entity.getCreatedAt());
 		}
 		
 		for(Field field : entity.getClass().getFields()) {
 			try {
 				if(!replaceData) 
-					if(contains(entity.getId() + "." + field.getName()))
+					if(file.contains(entity.getId() + "." + field.getName()))
 						continue;
 				
-				if(field.get(entity) instanceof Enum) 
-					set(entity.getId() + "." + field.getName(), ((Enum) field.get(entity)).getName());
-				else
-					set(entity.getId() + "." + field.getName(), field.get(entity));
-
+				Object val = field.get(entity);
+				file.set(entity.getId() + "." + field.getName(), val != null && val.getClass().isEnum() ? val.toString() : val);
 				
 			} catch (IllegalArgumentException | IllegalAccessException e) {
 				e.printStackTrace();
@@ -69,85 +62,70 @@ public class YamlRepository {
 		if(!exists(entityId)) 
 			throw new EntityNotFoundException("entity '" + entityId + "' not found");
 		
-		file.set(name + "." + entityId, null);
+		file.set(entityId, null);
 		file.saveFile();
 	}
 	
 	public boolean exists(Object entityId) {
-		return contains(entityId.toString());
+		return file.contains(entityId.toString());
 	}
 	
 	public boolean exists(String entityId) {
-		return contains(entityId);
+		return file.contains(entityId);
 	}
 	
-	public <T extends YamlEntity> List<T> findAll(Class<T> entityClass) {
+	public List<T> findAll() {
 		List<T> entities = new ArrayList<>();
 		
 		for(String entityId : file.getSectionList(name)) {
-			entities.add(find(entityClass, entityId));
+			entities.add(find(entityId));
 		}
 		
 		return entities;
 	}
 	
-	public <T extends YamlEntity> List<T> findAllByField(Class<T> entityClass, String fieldName, Object fieldValue) {		
-		return findAll(entityClass).stream().filter(e -> filter(e, fieldName, fieldValue)).collect(Collectors.toList());
+	public List<T> findAllByField(String fieldName, Object fieldValue) {		
+		return findAll().stream().filter(e -> filter(e, fieldName, fieldValue)).collect(Collectors.toList());
 	}
 	
-	public <T extends YamlEntity> T findByField(Class<T> entityClass, String fieldName, Object fieldValue) {
-		return findAll(entityClass).stream().filter(e -> filter(e, fieldName, fieldValue)).findFirst().orElse(null);
+	public T findByField(String fieldName, Object fieldValue) {
+		return findAll().stream().filter(e -> filter(e, fieldName, fieldValue)).findFirst().orElse(null);
 	}
 	
-	public <T extends YamlEntity> T find(Class<T> entityClass, Object entityId) {
-		return find(entityClass, entityId.toString());
+	public T find(Object entityId) {
+		return find(entityId.toString());
 	}
 	
-	public <T extends YamlEntity> T find(Class<T> entityClass, String entityId) {
+	public T find(String entityId) {
 		if(!exists(entityId)) 
-			throw new EntityNotFoundException("entity '" + entityId + "' not found");
-		
-		T  entity = null;
-		try {
-			entity = entityClass.getConstructor().newInstance();
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e1) {
-			e1.printStackTrace();
-		}
-
-		if(entity == null) 
 			return null;
 		
-		for(Field field : entity.getClass().getFields()) {	
+		T  entity = instantiate();
+		
+		entity.setId(entityId);
+		entity.setCreatedAt(file.getLong(entityId + ".createdAt"));
+		
+		if(file.contains(entityId + ".updatedAt"))
+			entity.setUpdatedAt(file.getLong(entityId + ".updatedAt"));
+		
+		for(Field field : entity.getClass().getFields()) {
+			if(!file.contains(entityId + "." + field.getName()))
+				continue;
+			
 			try {
-
-				try {
-					field.set(entity, EnumUtils.getEnum(field.getType(), file.getString(name + "." + entityId + "." + field.getName())));
-				} catch (IllegalArgumentException e) {
-					field.set(entity, file.get(name + "." + entityId + "." + field.getName()));
-				}
-				
+				if(field.getType().isEnum())
+					field.set(entity, getEnum(field.getType(), file.getString(entityId + "." + field.getName())));
+				else
+					field.set(entity, file.get(entityId + "." + field.getName()));
 			} catch (IllegalArgumentException | IllegalAccessException | SecurityException  e) {
 				e.printStackTrace();
 			}
 		}
-		
-		entity.setId(entityId);
-		entity.setCreatedAt(file.getLong(name + "." + entityId + ".createdAt"));
-		if(contains(entityId + ".updatedAt"))
-			entity.setUpdatedAt(file.getLong(name + "." + entityId + ".updatedAt"));
 				
 		return entity;
 	}
-	
-	private void set(String path, Object value) {
-		file.set(name + "." + path, value);
-	}
-	
-	private boolean contains(String path) {
-		return file.contains(name + "." + path);
-	}
 
-	private <T> boolean filter(T e, String fieldName, Object fieldValue) {
+	private boolean filter(T e, String fieldName, Object fieldValue) {
 		try {
 			return e.getClass().getField(fieldName).get(e).equals(fieldValue);
 		} catch (IllegalArgumentException | IllegalAccessException  | SecurityException e1) {
@@ -156,6 +134,21 @@ public class YamlRepository {
 			throw new EntityException("field '" + fieldName + "' not found");
 		}
 		return false;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <E extends Enum<E>> E getEnum(Class<?> class1, Object val) {
+		return Enum.valueOf((Class<E>) class1, val.toString());
+	}
+	
+	private T instantiate() {
+		try {
+			return entityClass.getConstructor().newInstance();
+		} catch (SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException e) {
+			e.printStackTrace();
+		}
+		
+		return null;
 	}
 	
 }

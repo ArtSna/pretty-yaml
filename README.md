@@ -7,39 +7,18 @@ A prettier solution of dealing with spigot yaml files
 Here is an example
 
 ```java
-public final class Role extends Enum {
-
-	public static Role OWNER = new Role("OWNER");
-	public static Role ADMIN = new Role("ADMIN");
-	public static Role MEMBER = new Role("MEMBER");
-
-	private Role(String name) { super( name ); }
-
- 	public static Role getEnum(String role) {
- 		return (Role) getEnum(Role.class, role);
- 	}
- 
-	public static Map getEnumMap( ) {
-		return getEnumMap(Role.class);
-	}
- 
-	public static List getEnumList( ) {
-		return getEnumList(Role.class);
-	}
- 
-	public static Iterator iterator( ) {
-		return iterator(Role.class);
-	}
+public enum Role {
+	LEADER,
+	ADMIN,
+	MEMBER;
 }
 ```
 
 ```java
 public class UserEntity extends YamlEntity {
-
 	public String name;
 	public String data;
 	public Role role;
-	
 }
 ```
 
@@ -50,14 +29,12 @@ public class Main extends JavaPlugin {
 	
 	@Override
 	public void onEnable() {
-		YamlRepository usersRepo = yamlController.getRepository("users");
+		YamlRepository<UserEntity> usersRepo = yamlController.getRepository("users", UserEntity.class);
 		
 		//Creating new user
 		UserEntity user = new UserEntity();
-		user.generateId(); //Generate a new UUID
 		
 		if(!usersRepo.exists(user.getId())) {
-			
 			user.name = "TakuiasH";
 			user.data = "test";
 			user.role = Role.OWNER;
@@ -67,7 +44,7 @@ public class Main extends JavaPlugin {
 		
 		
 		//Updating an user
-		UserEntity user2 = usersRepo.findByField(UserEntity.class, "name", "TakuiasH");
+		UserEntity user2 = usersRepo.findByField("name", "TakuiasH");
 		
 		if(user2 != null) {
 			user2.data = "Hello World!";
@@ -77,7 +54,7 @@ public class Main extends JavaPlugin {
 		}
 		
 		//Find by id
-		System.out.println(usersRepo.find(UserEntity.class, user2.getId()).toString());
+		System.out.println(usersRepo.find(user2.getId()).toString());
 	}
 	
 }
@@ -91,6 +68,6 @@ Maven
 <dependency>
     <groupId>com.github.TakuiasH</groupId>
     <artifactId>pretty-yaml</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```

@@ -10,7 +10,7 @@ public abstract class YamlEntity {
 	private long updatedAt;
 
 	public YamlEntity() {
-		this.createdAt = System.currentTimeMillis();
+		this(UUID.randomUUID().toString());
 	}
 	
 	public YamlEntity(String id) {
